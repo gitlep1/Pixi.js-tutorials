@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Application, Graphics } from "pixi.js";
+import { useSpring, animated } from "react-spring";
 import "./App.scss";
 
 function App() {
@@ -8,10 +9,26 @@ function App() {
   const pixiContainerRef = useRef(null);
   const [playerState, setPlayerState] = useState("idle");
 
-  const playerSpeed = 5;
+  const playerSpeed = 25;
   const gravity = 2;
   let isJumping = false;
   let verticleVelocity = 0;
+
+  const [springProps, setSpringProps] = useSpring(() => ({
+    x: 375,
+    config: { tension: 175, friction: 25 },
+    onChange: ({ value }) => {
+      if (playerRef.current) {
+        const clampedX = Math.max(0, Math.min(750, value.x));
+        playerRef.current.x = clampedX;
+
+        if (clampedX !== value.x) {
+          setSpringProps.stop();
+          setSpringProps.set({ x: clampedX });
+        }
+      }
+    },
+  }));
 
   useEffect(() => {
     initPixiApp();
@@ -49,10 +66,9 @@ function App() {
     appRef.current = app;
 
     renderGround(app);
-    const player = renderPlayer(app);
-    playerRef.current = player;
+    renderPlayer(app);
 
-    app.ticker.add(() => gameLoop(player));
+    app.ticker.add(() => gameLoop());
   };
 
   const renderGround = (app) => {
@@ -73,10 +89,11 @@ function App() {
 
     app.stage.addChild(player);
 
-    return player;
+    playerRef.current = player;
   };
 
-  const gameLoop = (player) => {
+  const gameLoop = () => {
+    const player = playerRef.current;
     if (!player) {
       return;
     }
@@ -91,24 +108,22 @@ function App() {
         isJumping = false;
       }
     }
-
-    player.x = Math.max(0, Math.min(750, player.x));
   };
 
   const handleKeyDown = (e) => {
-    const player = playerRef.current;
-
-    if (!player) {
-      return;
-    }
+    const currentX = springProps.x.get();
 
     if (e.key === "ArrowLeft" || e.key === "a") {
-      player.x = Math.max(0, player.x - playerSpeed);
+      setSpringProps.start({
+        x: Math.max(0, currentX - playerSpeed),
+      });
       setPlayerState("running");
     }
 
     if (e.key === "ArrowRight" || e.key === "d") {
-      player.x = Math.max(0, player.x + playerSpeed);
+      setSpringProps.start({
+        x: Math.max(0, currentX + playerSpeed),
+      });
       setPlayerState("running");
     }
 
