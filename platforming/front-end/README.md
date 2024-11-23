@@ -1,8 +1,10 @@
-# React + Vite
+# Setup
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+1. Install pixi.js `npm install pixi.js`
+2. Inside the file you're going to use for the main pixi.js stuff, import pixi.js `import * as PIXI from "pixi.js";`
+3. Using useRef create a pixi application
 
-Currently, two official plugins are available:
+```
+const pixiContainerRef = useRef(null);
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```
