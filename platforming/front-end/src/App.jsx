@@ -13,9 +13,11 @@ function App() {
   const gravity = 2;
   let isJumping = false;
   let verticleVelocity = 0;
+  // let horizontalVelocity = 0; figure out later
+  let platforms = [];
 
   const [springProps, setSpringProps] = useSpring(() => ({
-    x: 375,
+    x: 0,
     config: { tension: 175, friction: 25 },
     onChange: ({ value }) => {
       if (playerRef.current) {
@@ -68,6 +70,8 @@ function App() {
     renderGround(app);
     renderPlayer(app);
 
+    platforms = renderPlatforms(app);
+
     app.ticker.add(() => gameLoop());
   };
 
@@ -84,12 +88,29 @@ function App() {
     player.rect(0, 0, 50, 50);
     player.fill(0xffd700);
 
-    player.x = 375;
-    player.y = 600;
-
     app.stage.addChild(player);
 
     playerRef.current = player;
+  };
+
+  const renderPlatforms = (app) => {
+    const platformData = [
+      { x: 150, y: 550, width: 150, height: 20, color: 0xff0000 },
+      { x: 300, y: 500, width: 200, height: 20, color: 0xffffff },
+      { x: 500, y: 450, width: 300, height: 20, color: 0x0000ff },
+    ];
+
+    return platformData.map(({ x, y, width, height, color }) => {
+      const platform = new Graphics();
+      platform.rect(0, 0, width, height);
+      platform.fill(color);
+
+      platform.x = x;
+      platform.y = y;
+
+      app.stage.addChild(platform);
+      return platform;
+    });
   };
 
   const gameLoop = () => {
@@ -101,6 +122,20 @@ function App() {
     if (isJumping || player.y < 600) {
       verticleVelocity += gravity;
       player.y += verticleVelocity;
+
+      for (let platform of platforms) {
+        if (
+          player.x + 50 > platform.x &&
+          player.x < platform.x + platform.width &&
+          player.y + 50 >= platform.y &&
+          player.y + verticleVelocity <= platform.y
+        ) {
+          player.y = platform.y - 50;
+          verticleVelocity = 0;
+          isJumping = false;
+          break;
+        }
+      }
 
       if (player.y >= 600) {
         player.y = 600;
