@@ -8,6 +8,7 @@ function App() {
   const playerRef = useRef(null);
   const pixiContainerRef = useRef(null);
   const [playerState, setPlayerState] = useState("idle");
+  const [score, setScore] = useState(0);
 
   const playerSpeed = 25;
   const gravity = 2;
@@ -100,17 +101,46 @@ function App() {
       { x: 500, y: 450, width: 300, height: 20, color: 0x0000ff },
     ];
 
-    return platformData.map(({ x, y, width, height, color }) => {
-      const platform = new Graphics();
-      platform.rect(0, 0, width, height);
-      platform.fill(color);
+    const staticPlatforms = platformData.map(
+      ({ x, y, width, height, color }) => {
+        const platform = new Graphics();
+        platform.rect(0, 0, width, height);
+        platform.fill(color);
 
-      platform.x = x;
-      platform.y = y;
+        platform.x = x;
+        platform.y = y;
+        platform.color = color;
+        platform.scored = false;
 
-      app.stage.addChild(platform);
-      return platform;
-    });
+        app.stage.addChild(platform);
+        return platform;
+      }
+    );
+
+    const movingPlatformData = [
+      { x: 300, y: 400, width: 300, height: 20, speed: 2, color: 0x0000ff },
+      { x: 150, y: 350, width: 200, height: 20, speed: 4, color: 0xffffff },
+      { x: 50, y: 300, width: 150, height: 20, speed: 6, color: 0xff0000 },
+    ];
+
+    const dynamicPlatforms = movingPlatformData.map(
+      ({ x, y, width, height, speed, color }) => {
+        const platform = new Graphics();
+        platform.rect(0, 0, width, height);
+        platform.fill(color);
+
+        platform.x = x;
+        platform.y = y;
+        platform.color = color;
+        platform.speed = speed;
+        platform.scored = false;
+
+        app.stage.addChild(platform);
+        return platform;
+      }
+    );
+
+    return [staticPlatforms, dynamicPlatforms];
   };
 
   const gameLoop = () => {
@@ -123,7 +153,7 @@ function App() {
       verticleVelocity += gravity;
       player.y += verticleVelocity;
 
-      for (let platform of platforms) {
+      for (let platform of platforms[0]) {
         if (
           player.x + 50 > platform.x &&
           player.x < platform.x + platform.width &&
@@ -133,6 +163,16 @@ function App() {
           player.y = platform.y - 50;
           verticleVelocity = 0;
           isJumping = false;
+
+          platform.rect(0, 0, platform.width, platform.height);
+          platform.fill(0xffff00);
+
+          if (!platform.scored) {
+            setScore((prevScore) => prevScore + 10);
+            platform.scored = true;
+          }
+
+          revertPlatformColor(platform);
           break;
         }
       }
@@ -143,6 +183,50 @@ function App() {
         isJumping = false;
       }
     }
+
+    for (let platform of platforms[1]) {
+      platform.x += platform.speed;
+
+      if (platform.x <= 0 || platform.x + platform.width >= 800) {
+        platform.speed *= -1;
+      }
+
+      if (isJumping || player.y < 600) {
+        if (
+          player.x + 50 > platform.x &&
+          player.x < platform.x + platform.width &&
+          player.y + 50 >= platform.y &&
+          player.y + verticleVelocity <= platform.y
+        ) {
+          player.y = platform.y - 50;
+          verticleVelocity = 0;
+          isJumping = false;
+
+          platform.rect(0, 0, platform.width, platform.height);
+          platform.fill(0xffff00);
+
+          if (!platform.scored) {
+            setScore((prevScore) => prevScore + 10);
+            platform.scored = true;
+          }
+
+          revertPlatformColor(platform);
+        }
+
+        if (player.y >= 600) {
+          player.y = 600;
+          verticleVelocity = 0;
+          isJumping = false;
+        }
+      }
+    }
+  };
+
+  const revertPlatformColor = (platform) => {
+    setTimeout(() => {
+      platform.rect(0, 0, platform.width, platform.height);
+      platform.fill(platform.color);
+    }, 1000);
   };
 
   const handleKeyDown = (e) => {
@@ -183,6 +267,7 @@ function App() {
   return (
     <section>
       <h1>Platforming Tutorial</h1>
+      <h2>Score: {score}</h2>
       <div ref={pixiContainerRef}></div>
     </section>
   );
